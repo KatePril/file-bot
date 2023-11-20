@@ -49,9 +49,11 @@ async def process_url(message: Message, state: FSMContext):
             if test_response.ok:
                 await message.answer("File was uploaded successfully")
             else:
-                await message.answer("Failed to upload the file")
+                await message.answer("Failed to upload the file\n"
+                                     "*_Make sure name of your file is present in the list of the files_*", parse_mode=ParseMode.MARKDOWN_V2)
         except:
-            await message.answer("Failed to upload the file")
+            await message.answer("Failed to upload the file\n"
+                                 "*_Make sure name of your file is present in the list of the files_*", parse_mode=ParseMode.MARKDOWN_V2)
         await state.clear()
     else:
         await message.answer("Try entering link again")
@@ -75,7 +77,8 @@ async def process_file_name(message: Message, state: FSMContext):
         f.close()
         await bot.send_document(chat_id=message.chat.id, document=files['files'][data['file_name']])
     except:
-        await message.answer("Failed to send file")
+        await message.answer("Failed to send file\n"
+                             "*_Make sure name of your file is present in the list of the files_*", parse_mode=ParseMode.MARKDOWN_V2)
 
 
 @text_router.message(Command("help"))

@@ -16,4 +16,4 @@ async def list_commands(message):
                          "/list_files - show all files sent to the bot\n"
                          "/help - see all commands\n"
                          "/download - send one of the files you have sent to the bot\n"
-                         "/send - send fil via link", parse_mode=ParseMode.HTML)
+                         "/send - send file via link", parse_mode=ParseMode.HTML)
