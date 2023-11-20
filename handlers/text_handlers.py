@@ -14,12 +14,14 @@ import re
 import requests
 import json
 
+from constants import BASE_URL, JSON_FILE
+
 router = Router()
 
 
 @router.message(Command("list_files"))
 async def list_files(message: Message):
-    await message.answer("\n".join([f'`{file}`' for file in listdir("files/")]), parse_mode=ParseMode.MARKDOWN)
+    await message.answer("\n".join([f'`{file}`' for file in listdir(BASE_URL)]), parse_mode=ParseMode.MARKDOWN)
 
 
 @router.message(Command("send"))
@@ -76,7 +78,7 @@ async def process_file_name(message: Message, state: FSMContext):
     await state.clear()
 
     try:
-        f = open("files_id.json")
+        f = open(JSON_FILE)
         files = json.load(f)
         f.close()
         await bot.send_document(chat_id=message.chat.id, document=files['files'][data['file_name']])
@@ -112,19 +114,20 @@ async def message_with_file(message: Message):
     file = await bot.get_file(file_id)
     file_path = file.file_path
 
-    f = open("files_id.json")
+    f = open(JSON_FILE)
     data = json.load(f)
     f.close()
     data['files'][file_name] = file_id
 
     json_object = json.dumps(data)
 
-    with open("files_id.json", "w") as file_json:
+    with open(JSON_FILE, "w") as file_json:
         file_json.write(json_object)
 
 
     try:
-        await bot.download_file(file_path, f"files/{file_name}")
+        download_path =  BASE_URL + file_name
+        await bot.download_file(file_path, download_path)
         await message.reply("Downloaded successfully")
     except:
         await message.reply("Failed to download")
