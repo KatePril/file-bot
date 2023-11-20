@@ -10,44 +10,36 @@ from states.SendToChatForm import SendToChatForm
 from states.SendViaLink import SendViaLink
 from aiogram.fsm.context import FSMContext
 
-import re
 import requests
 import json
 
 from constants import BASE_URL, JSON_FILE
+from utils import *
 
-router = Router()
+send_router = Router()
+text_router = Router()
+download_router = Router()
 
 
-@router.message(Command("list_files"))
+@send_router.message(Command("list_files"))
 async def list_files(message: Message):
     await message.answer("\n".join([f'`{file}`' for file in listdir(BASE_URL)]), parse_mode=ParseMode.MARKDOWN)
 
 
-@router.message(Command("send"))
+@send_router.message(Command("send"))
 async def send_via_link(message: Message, state: FSMContext):
     await state.set_state(SendViaLink.file_name)
     await message.answer("Enter the file name:")
 
 
-@router.message(SendViaLink.file_name)
+@send_router.message(SendViaLink.file_name)
 async def process_file_name_via_link(message: Message, state: FSMContext):
     await state.update_data(file_name=message.text)
     await state.set_state(SendViaLink.url)
     await message.answer("Enter the link:")
 
 
-async def is_valid_url(url):
-    regex = re.compile(
-        r'^(https?|ftp)://'
-        r'([A-Za-z0-9-]+\.)+[A-Za-z]{2,}'
-        r'(:\d+)?'
-        r'(/[^\s]*)?$'
-    )
-    return bool(re.match(regex, url))
-
-
-@router.message(SendViaLink.url)
+@send_router.message(SendViaLink.url)
 async def process_url(message: Message, state: FSMContext):
     await state.update_data(url=message.text)
     data = await state.get_data()
@@ -65,13 +57,13 @@ async def process_url(message: Message, state: FSMContext):
         await message.answer("Try entering link again")
 
 
-@router.message(Command("download"))
+@send_router.message(Command("download"))
 async def send_file(message: Message, state: FSMContext):
     await state.set_state(SendToChatForm.file_name)
     await message.answer("Enter the file name:")
 
 
-@router.message(SendToChatForm.file_name)
+@send_router.message(SendToChatForm.file_name)
 async def process_file_name(message: Message, state: FSMContext):
     await state.update_data(file_name=message.text)
     data = await state.get_data()
@@ -86,20 +78,12 @@ async def process_file_name(message: Message, state: FSMContext):
         await message.answer("Failed to send file")
 
 
-async def list_commands(message):
-    await message.answer("<b>Here is the list of the commands available:</b>\n"
-                         "/list_files - show all files sent to the bot\n"
-                         "/help - see all commands\n"
-                         "/download - send one of the files you have sent to the bot\n"
-                         "/send - send fil via link", parse_mode=ParseMode.HTML)
-
-
-@router.message(Command("help"))
+@text_router.message(Command("help"))
 async def help(message: Message):
     await list_commands(message)
 
 
-@router.message(F.text)
+@text_router.message(F.text)
 async def message_with_text(message: Message):
     await message.reply("*Hi here\!*\n_Talking with the bot is not currently available_\n"
                         "*_So, please make sure you have typed a command correctly or come back later_*",
@@ -107,7 +91,7 @@ async def message_with_text(message: Message):
     await list_commands(message)
 
 
-@router.message(F)
+@download_router.message(F)
 async def message_with_file(message: Message):
     file_id = message.document.file_id
     file_name = message.document.file_name
@@ -124,9 +108,8 @@ async def message_with_file(message: Message):
     with open(JSON_FILE, "w") as file_json:
         file_json.write(json_object)
 
-
     try:
-        download_path =  BASE_URL + file_name
+        download_path = BASE_URL + file_name
         await bot.download_file(file_path, download_path)
         await message.reply("Downloaded successfully")
     except:
